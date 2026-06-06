@@ -1,0 +1,9 @@
+apps:
+  - name: 'game'
+    script: 'dist/server.js'
+    instances: 0
+    exec_mode: cluster
+    log_type: json
+    log_date_format: 'YYYY-MM-DDTHH:mm:ss.SSS'
+    merge_logs: true
+    

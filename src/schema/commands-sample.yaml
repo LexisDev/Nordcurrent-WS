@@ -1,0 +1,88 @@
+asyncapi: '2.0.0'
+info:
+  title: Nordcurrent WS API
+  version: '1.0.0'
+  description: |
+    Description of commands for the simplified game server via WebSocket.
+    The client first sends the `login` command, after which it can execute
+    other commands. Player data is stored in JSON files.
+
+servers:
+  development:
+    url: localhost:{port}
+    protocol: ws
+    description: Local development server
+    variables:
+      port:
+        description: WebSocket server port (environment variable SERVER_PORT).
+        default: '8080'
+
+defaultContentType: application/json
+
+channels:
+  /:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/Login'
+
+components:
+  messages: {}
+  schemas:
+    token:
+      type: string
+      description: Optional request identifier that the server returns in the response.
+
+    auth-response:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Name of the command (login).
+        token:
+          $ref: '#/components/schemas/token'
+        data:
+          type: object
+          description: Data from the server and the full player snapshot.
+          properties:
+            server:
+              type: object
+              description: Information about the game server (time).
+            player:
+              type: object
+              description: Document of the player (id, params, createdAt, updatedAt).
+
+    changes-response:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Name of the command, on which the response was created.
+        token:
+          $ref: '#/components/schemas/token'
+        data:
+          type: object
+          description: Actual player snapshot after executing the command.
+          properties:
+            player:
+              type: object
+              description: Player document.
+
+    error-response:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Name of the command, which caused the error (if applicable).
+        token:
+          $ref: '#/components/schemas/token'
+        error:
+          type: object
+          description: Description of the error.
+          properties:
+            type:
+              type: string
+              description: Type of the error (name of the exception class).
+            message:
+              type: string
+              description: Human-readable error message.

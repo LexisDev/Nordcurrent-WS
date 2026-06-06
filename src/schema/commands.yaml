@@ -1,0 +1,300 @@
+asyncapi: 2.0.0
+info:
+  title: Nordcurrent WS API
+  version: 1.0.0
+  description: |
+    Description of commands for the simplified game server via WebSocket.
+    The client first sends the `login` command, after which it can execute
+    other commands. Player data is stored in JSON files.
+servers:
+  development:
+    url: localhost:{port}
+    protocol: ws
+    description: Local development server
+    variables:
+      port:
+        description: WebSocket server port (environment variable SERVER_PORT).
+        default: '8080'
+defaultContentType: application/json
+channels:
+  /:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/LevelComplete'
+          - $ref: '#/components/messages/LevelStart'
+          - $ref: '#/components/messages/Login'
+          - $ref: '#/components/messages/SetParam'
+          - $ref: '#/components/messages/Trigger'
+components:
+  messages:
+    LevelComplete:
+      name: LevelComplete
+      title: level-complete
+      summary: >-
+        Player won a level — 1 unit of energy is granted back (capped at the
+        maximum). Together with level-start this nets to zero, so a win
+        effectively does not cost energy.
+      description: >-
+        Player won a level — 1 unit of energy is granted back (capped at the
+        maximum). Together with level-start this nets to zero, so a win
+        effectively does not cost energy.
+      payload:
+        $ref: '#/components/schemas/LevelComplete'
+      x-response:
+        $ref: '#/components/schemas/changes-response'
+      examples:
+        - payload:
+            cmd: level-complete
+            token: MTgwNjY1MTIzMTIuNTUwOTc=
+            params: {}
+    LevelStart:
+      name: LevelStart
+      title: level-start
+      summary: >-
+        Player started or restarted a level — 1 unit of energy is consumed. If
+        energy dropped below the maximum, the recovery timer is started.
+      description: >-
+        Player started or restarted a level — 1 unit of energy is consumed. If
+        energy dropped below the maximum, the recovery timer is started.
+      payload:
+        $ref: '#/components/schemas/LevelStart'
+      x-response:
+        $ref: '#/components/schemas/changes-response'
+      examples:
+        - payload:
+            cmd: level-start
+            token: MTgwNjY1MTIzMTIuNTUwOTc=
+            params: {}
+    Login:
+      name: Login
+      title: login
+      summary: >-
+        Authenticate connections by player ID. Creates a session, loads player
+        data from a JSON file (or creates a new one), and returns a full player
+        snapshot.
+      description: >-
+        Authenticate connections by player ID. Creates a session, loads player
+        data from a JSON file (or creates a new one), and returns a full player
+        snapshot.
+      payload:
+        $ref: '#/components/schemas/Login'
+      x-response:
+        $ref: '#/components/schemas/auth-response'
+      examples:
+        - payload:
+            cmd: login
+            token: MTgwNjY1MTIzMTIuNTUwOTc=
+            params:
+              playerId: Player1
+    SetParam:
+      name: SetParam
+      title: set-param
+      summary: >-
+        Test command: changes one player parameter. The change is applied in
+        memory and saved to the JSON file when the connection is closed.
+      description: >-
+        Test command: changes one player parameter. The change is applied in
+        memory and saved to the JSON file when the connection is closed.
+      payload:
+        $ref: '#/components/schemas/SetParam'
+      x-response:
+        $ref: '#/components/schemas/changes-response'
+      examples:
+        - payload:
+            cmd: set-param
+            token: MTgwNjY1MTIzMTIuNTUwOTc=
+            params:
+              key: coins
+              value: 250
+    Trigger:
+      name: Trigger
+      title: trigger
+      summary: >-
+        Trigger for the timer of a game entity. For energy, it credits all fully
+        elapsed recovery cycles (1 unit per interval) and restarts the count if
+        the maximum has not yet been reached.
+      description: >-
+        Trigger for the timer of a game entity. For energy, it credits all fully
+        elapsed recovery cycles (1 unit per interval) and restarts the count if
+        the maximum has not yet been reached.
+      payload:
+        $ref: '#/components/schemas/Trigger'
+      x-response:
+        $ref: '#/components/schemas/changes-response'
+      examples:
+        - payload:
+            cmd: trigger
+            token: MTgwNjY1MTIzMTIuNTUwOTc=
+            params:
+              type: resource
+              id: energy
+  schemas:
+    token:
+      type: string
+      description: Optional request identifier that the server returns in the response.
+    auth-response:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Name of the command (login).
+        token:
+          $ref: '#/components/schemas/token'
+        data:
+          type: object
+          description: Data from the server and the full player snapshot.
+          properties:
+            server:
+              type: object
+              description: Information about the game server (time).
+            player:
+              type: object
+              description: Document of the player (id, params, createdAt, updatedAt).
+    changes-response:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Name of the command, on which the response was created.
+        token:
+          $ref: '#/components/schemas/token'
+        data:
+          type: object
+          description: Actual player snapshot after executing the command.
+          properties:
+            player:
+              type: object
+              description: Player document.
+    error-response:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Name of the command, which caused the error (if applicable).
+        token:
+          $ref: '#/components/schemas/token'
+        error:
+          type: object
+          description: Description of the error.
+          properties:
+            type:
+              type: string
+              description: Type of the error (name of the exception class).
+            message:
+              type: string
+              description: Human-readable error message.
+    LevelComplete:
+      type: object
+      properties:
+        cmd:
+          type: string
+          const: level-complete
+          description: >-
+            Player won a level — 1 unit of energy is granted back (capped at the
+            maximum). Together with level-start this nets to zero, so a win
+            effectively does not cost energy.
+        token:
+          $ref: '#/components/schemas/token'
+        params:
+          type: object
+          properties: {}
+          required: []
+      required:
+        - cmd
+    LevelStart:
+      type: object
+      properties:
+        cmd:
+          type: string
+          const: level-start
+          description: >-
+            Player started or restarted a level — 1 unit of energy is consumed.
+            If energy dropped below the maximum, the recovery timer is started.
+        token:
+          $ref: '#/components/schemas/token'
+        params:
+          type: object
+          properties: {}
+          required: []
+      required:
+        - cmd
+    Login:
+      type: object
+      properties:
+        cmd:
+          type: string
+          const: login
+          description: >-
+            Authenticate connections by player ID. Creates a session, loads
+            player data from a JSON file (or creates a new one), and returns a
+            full player snapshot.
+        token:
+          $ref: '#/components/schemas/token'
+        params:
+          type: object
+          properties:
+            playerId:
+              type: string
+              description: >-
+                Player ID, e.g. 'Player1', 'Player2'. Latin letters, digits, '-'
+                and '_'.
+          required:
+            - playerId
+      required:
+        - cmd
+    SetParam:
+      type: object
+      properties:
+        cmd:
+          type: string
+          const: set-param
+          description: >-
+            Test command: changes one player parameter. The change is applied in
+            memory and saved to the JSON file when the connection is closed.
+        token:
+          $ref: '#/components/schemas/token'
+        params:
+          type: object
+          properties:
+            key:
+              type: string
+              description: Player parameter name (e.g. 'coins', 'level', 'name').
+            value:
+              type: integer
+              description: >-
+                New value for the parameter. In the example, a number is shown;
+                at runtime, any value is accepted (number, string, object).
+          required:
+            - key
+            - value
+      required:
+        - cmd
+    Trigger:
+      type: object
+      properties:
+        cmd:
+          type: string
+          const: trigger
+          description: >-
+            Trigger for the timer of a game entity. For energy, it credits all
+            fully elapsed recovery cycles (1 unit per interval) and restarts the
+            count if the maximum has not yet been reached.
+        token:
+          $ref: '#/components/schemas/token'
+        params:
+          type: object
+          properties:
+            type:
+              type: string
+              description: Type of the game entity with a timer.
+              enum:
+                - resource
+            id:
+              type: string
+              description: ID of the entity (e.g. 'energy').
+          required:
+            - type
+            - id
+      required:
+        - cmd

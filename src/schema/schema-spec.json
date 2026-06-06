@@ -1,0 +1,70 @@
+[
+    {
+        "Command": "login",
+        "ParamsSample": {
+            "playerId": "Player1"
+        },
+        "Description": "Authenticate connections by player ID. Creates a session, loads player data from a JSON file (or creates a new one), and returns a full player snapshot.",
+        "XResponse": "auth-response",
+        "Params": {
+            "playerId": {
+                "Description": "Player ID, e.g. 'Player1', 'Player2'. Latin letters, digits, '-' and '_'.",
+                "Type": "string",
+                "Required": true
+            }
+        }
+    },
+    {
+        "Command": "set-param",
+        "ParamsSample": {
+            "key": "coins",
+            "value": 250
+        },
+        "Description": "Test command: changes one player parameter. The change is applied in memory and saved to the JSON file when the connection is closed.",
+        "Params": {
+            "key": {
+                "Description": "Player parameter name (e.g. 'coins', 'level', 'name').",
+                "Type": "string",
+                "Required": true
+            },
+            "value": {
+                "Description": "New value for the parameter. In the example, a number is shown; at runtime, any value is accepted (number, string, object).",
+                "Type": "integer",
+                "Required": true
+            }
+        }
+    },
+    {
+        "Command": "level-start",
+        "ParamsSample": {},
+        "Description": "Player started or restarted a level — 1 unit of energy is consumed. If energy dropped below the maximum, the recovery timer is started.",
+        "Params": {}
+    },
+    {
+        "Command": "level-complete",
+        "ParamsSample": {},
+        "Description": "Player won a level — 1 unit of energy is granted back (capped at the maximum). Together with level-start this nets to zero, so a win effectively does not cost energy.",
+        "Params": {}
+    },
+    {
+        "Command": "trigger",
+        "ParamsSample": {
+            "type": "resource",
+            "id": "energy"
+        },
+        "Description": "Trigger for the timer of a game entity. For energy, it credits all fully elapsed recovery cycles (1 unit per interval) and restarts the count if the maximum has not yet been reached.",
+        "Params": {
+            "type": {
+                "Description": "Type of the game entity with a timer.",
+                "Type": "string",
+                "Enum": ["resource"],
+                "Required": true
+            },
+            "id": {
+                "Description": "ID of the entity (e.g. 'energy').",
+                "Type": "string",
+                "Required": true
+            }
+        }
+    }
+]

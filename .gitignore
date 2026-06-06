@@ -1,0 +1,8 @@
+/.idea/
+/node_modules/
+/.env
+/dist/
+/src/**/*.js
+/src/**/*.js.map
+/yarn.lock
+pm2-dev.yaml
