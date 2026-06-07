@@ -2,6 +2,36 @@
 
 Simplified WebSocket game server. Player data is stored in JSON files; commands are handled server-side and return structured JSON responses.
 
+## Architecture
+
+The proposed client–server architecture follows the technical specification using a **WebSocket** connection. After connecting, the client is authenticated through the server API and gains access to server-side functions.
+
+On **login**, the client receives all data the server stores, loads it into memory, and works with it locally without repeatedly hitting the server. The server is contacted only when data **mutates** or when the **connection is lost**—then updated data is persisted on the server (here, JSON files, but the same pattern works with a relational database or any other durable storage) and waits for the next session. This model is well suited for the game logic described in the specification.
+
+### Client integration flow
+
+To implement game logic on the client:
+
+1. Connect to the WebSocket server: [`wss://nordcurrent-ws.onrender.com`](wss://nordcurrent-ws.onrender.com)
+2. Run **login**:
+   ```json
+   { "cmd": "login", "params": { "playerId": "Player2" }, "token": "test-token" }
+   ```
+3. After login, if a timer has already elapsed (e.g. energy recovery), call **trigger**:
+   ```json
+   { "cmd": "trigger", "params": { "type": "resource", "id": "energy" } }
+   ```
+4. To start or restart a level:
+   ```json
+   { "cmd": "level-start", "params": {} }
+   ```
+5. On successful level completion:
+   ```json
+   { "cmd": "level-complete", "params": {} }
+   ```
+
+This design makes it straightforward to add new game mechanics and evolve the stack—message brokers, different databases, analytics, logging, and other infrastructure can be introduced without changing the client-facing API shape.
+
 ## Production
 
 | | URL |
