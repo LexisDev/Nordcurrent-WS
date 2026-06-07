@@ -1,6 +1,7 @@
 import Mixin from "../../application/mixin";
 import BadParameterException from "../../exceptions/bad-parameter-exception";
 import Renewable from "../../library/renewable";
+import PolymorphicEntity from "../polymorphic-entity";
 import Triggerable from "../triggerable";
 import TriggerableTrait from "../triggerable-trait";
 import type UserState from "../user-state";
@@ -12,7 +13,7 @@ export interface RenewableData {
 }
 
 @Mixin(TriggerableTrait)
-class UserRenewable implements Triggerable {
+class UserRenewable extends PolymorphicEntity implements Triggerable {
     public startTime = 0;
     protected amount: number;
     protected capacity: number;
@@ -28,19 +29,35 @@ class UserRenewable implements Triggerable {
     public getTimeLeft!: (time: number) => number | null;
     public getFinishTime!: () => number | null;
 
-    constructor(
-        private readonly userState: UserState,
-        public readonly config: Renewable,
-        data?: RenewableData,
-    ) {
-        this.capacity = data ? data.capacity : config.getCapacity();
-        this.amount = data ? data.amount : config.getCapacity();
-        this.startTime = data ? data.startTime : 0;
+    constructor(userState: UserState, public readonly config: Renewable, data?: RenewableData) {
+        super();
+        this.userState = userState;
+        this.capacity = config.getCapacity();
+        this.amount = config.getCapacity();
+        if (data) {
+            this.hydrate(data);
+        }
         this.adjustTimer();
+    }
+
+    public attributes(): Record<string, string> {
+        return {
+            amount: "amount",
+            capacity: "capacity",
+            startTime: "startTime",
+        };
+    }
+
+    public getResponsePath(): string[] {
+        return ["resources", this.resourceId];
     }
 
     public get resourceId(): string {
         return this.config.id;
+    }
+
+    public getLibraryObject(): Renewable {
+        return this.config;
     }
 
     public getCycleTime(): number {
@@ -58,7 +75,7 @@ class UserRenewable implements Triggerable {
     public setAmount(amount: number): void {
         this.amount = Math.max(0, Math.min(this.capacity, amount));
         this.adjustTimer();
-        this.userState.markDirty();
+        this.save();
     }
 
     public spend(amount = 1): void {
@@ -92,7 +109,7 @@ class UserRenewable implements Triggerable {
             this.stopTimer();
         }
         this.amount = newAmount;
-        this.userState.markDirty();
+        this.save();
     }
 
     public getSnapshot(time: number) {
@@ -102,14 +119,6 @@ class UserRenewable implements Triggerable {
             capacity: this.capacity,
             start_time: this.startTime,
             time_left: this.getTimeLeft(time),
-        };
-    }
-
-    public toData(): RenewableData {
-        return {
-            amount: this.amount,
-            capacity: this.capacity,
-            startTime: this.startTime,
         };
     }
 }

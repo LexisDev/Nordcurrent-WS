@@ -2,6 +2,7 @@ import Application from "../application/application";
 import Library from "../library/library";
 import PlayerStorage, { PlayerData } from "../storage/player-storage";
 import Logger from "../utils/logger";
+import UserEnergy from "./resources/user-energy";
 import UserRenewable from "./resources/user-renewable";
 
 export default class UserState {
@@ -50,7 +51,11 @@ export default class UserState {
     private loadResources(): void {
         const saved = this.data.resources ?? {};
         for (const config of Object.values(Library.getInstance().getRenewables())) {
-            this.resources[config.id] = new UserRenewable(this, config, saved[config.id]);
+            const data = saved[config.id];
+            this.resources[config.id] =
+                config.id === "energy"
+                    ? new UserEnergy(this, config, data)
+                    : new UserRenewable(this, config, data);
         }
     }
 
@@ -60,6 +65,10 @@ export default class UserState {
 
     public getResource(id: string): UserRenewable | undefined {
         return this.resources[id];
+    }
+
+    public getEnergy(): UserEnergy {
+        return this.resources.energy as UserEnergy;
     }
 
     public getParam<T = any>(key: string, defaultValue: T | null = null): T | null {
@@ -96,7 +105,11 @@ export default class UserState {
         }
         this.data.resources = {};
         for (const [id, resource] of Object.entries(this.resources)) {
-            this.data.resources[id] = resource.toData();
+            this.data.resources[id] = resource.extract() as {
+                amount: number;
+                capacity: number;
+                startTime: number;
+            };
         }
         this.data.updatedAt = Date.now();
         this.storage.save(this.data);
