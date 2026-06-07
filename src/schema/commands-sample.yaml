@@ -7,15 +7,7 @@ info:
     The client first sends the `login` command, after which it can execute
     other commands. Player data is stored in JSON files.
 
-servers:
-  development:
-    url: localhost:{port}
-    protocol: ws
-    description: Local development server
-    variables:
-      port:
-        description: WebSocket server port (environment variable SERVER_PORT).
-        default: '8080'
+servers: {}
 
 defaultContentType: application/json
 

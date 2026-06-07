@@ -8,15 +8,9 @@
   },
   "servers": {
     "development": {
-      "url": "localhost:{port}",
+      "url": "nordcurrent-ws.local:8999",
       "protocol": "ws",
-      "description": "Local development server",
-      "variables": {
-        "port": {
-          "description": "WebSocket server port (environment variable SERVER_PORT).",
-          "default": "8080"
-        }
-      }
+      "description": "Local development server. Docs: http://nordcurrent-ws.local:8999/docs/"
     }
   },
   "defaultContentType": "application/json",

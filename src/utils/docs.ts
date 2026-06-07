@@ -2,6 +2,8 @@ import { resolve, join } from "path";
 import { promises as fs } from "fs";
 import * as yaml from "js-yaml";
 
+require("dotenv").config({ path: resolve(__dirname, "..", "..", ".env") });
+
 type ISchemaSettingParam = {
     Description: string;
     Type: string;
@@ -97,6 +99,7 @@ export async function generateDocs() {
         schemas[commandName] = yamlConfig.schemas;
     }
 
+    documentation.servers = buildServers();
     documentation.channels["/"].publish.message.oneOf = channels;
     documentation.components.messages = messages;
     documentation.components.schemas = { ...documentation.components.schemas, ...schemas };
@@ -157,6 +160,29 @@ function getProperty(type: string, props?: Record<string, ISchemaSettingParam>):
     }
 
     return property;
+}
+
+function buildServers(): Record<string, any> {
+    if (process.env.NODE_ENV === "production") {
+        const host = process.env.DOCS_HOST || "nordcurrent-ws.onrender.com";
+        return {
+            production: {
+                url: host,
+                protocol: "wss",
+                description: `Production server. Docs: https://${host}/docs/`,
+            },
+        };
+    }
+
+    const host = process.env.DOCS_HOST || "nordcurrent-ws.local";
+    const port = process.env.SERVER_PORT || "8080";
+    return {
+        development: {
+            url: `${host}:${port}`,
+            protocol: "ws",
+            description: `Local development server. Docs: http://${host}:${port}/docs/`,
+        },
+    };
 }
 
 async function getBaseDoc(): Promise<any> {
